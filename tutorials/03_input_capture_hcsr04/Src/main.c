@@ -127,7 +127,7 @@ void TIM5_IRQHandler(void)
 			}
 
 			// convert pulse width from clocks to micro seconds
-			pulse_width_us = pulse_width * CLOCKS_TO_US;
+			pulse_width_us = pulse_width; //  * CLOCKS_TO_US;
 
 			// compute distance
 			distance = pulse_width_us / DISTANCE_NORMALIZER;

@@ -11,9 +11,20 @@
 /** prototypes **/
 void config_dma2_ch0_stream0_adc1(void);
 
-
+/** globals **/
 uint16_t adc_data[NUM_ADC_CHANNELS];
 
+/* Determine ADC Voltage Scaling in mV: Vcc/4095 */
+const float ADC_VOLTAGE_SCALE = (VCC == 33) ? 0.8058608059 : 1.221001221; // mV/sample
+
+/* determine sensor voltage scaling: Vcc/1024
+ * 3.3V --> 3.2mV/cm
+ * 5V --> 4.9mV/cm
+ */
+const float SENSOR_VOLTAGE_SCALE = (VCC == 33) ? 3.22265625 : 4.8828125; // mV/cm
+
+// conversion factor from ADC Samples to measured distance in cm
+const float SAMPLES_TO_CM = ADC_VOLTAGE_SCALE / SENSOR_VOLTAGE_SCALE;
 
 /* --------------------------------------------------------------------------------
  * PWM Trigger config Functions
@@ -31,7 +42,7 @@ void config_PWM_TIM2_ch1_trigger(void)
 	// ensure TIM2 is disabled
 	TIM2->CR1 &= ~TIM_CR1_CEN;
 
-	// set counting direction
+	// set counting direction to upcounting mode
 	TIM2->CR1 &= ~TIM_CR1_DIR;
 
 	// set prescaler
@@ -41,7 +52,7 @@ void config_PWM_TIM2_ch1_trigger(void)
 	TIM2->ARR = TRIGGER_TIMER_ARR - 1;
 
 	// set output compare register for channel 2
-	TIM2->CCR1 = 5; // 5 clock cycles --> 5 * 10us/clock = 50us
+	TIM2->CCR1 = 100; // 5; // 5 clock cycles --> 5 * 10us/clock = 50us pulse width
 
 	// select PWM mode for channel 2
 	TIM2->CCMR1 &= ~TIM_CCMR1_OC1M_Msk; // clear bits
@@ -52,6 +63,9 @@ void config_PWM_TIM2_ch1_trigger(void)
 
 	// slect output polarity to 0 - active high
 	TIM2->CCER &= ~TIM_CCER_CC1P;
+
+	// initialize all registers??
+	// TIM2->EGR |= TIM_EGR_UG;
 
 	// enable output of channel 1
 	TIM2->CCER |= TIM_CCER_CC1E;
@@ -75,8 +89,8 @@ void config_adc1_dma(void)
 	// (CHANGE FOR DIFFERENT NUM OF CHANNELS)
 	// set PA0, PA1, PA4 to analog mode
 	// GPIOA->MODER |= GPIO_MODER_MODE0_Msk; // PA0
-	GPIOA->MODER |= GPIO_MODER_MODE1_Msk; // PA1
-    GPIOA->MODER |= GPIO_MODER_MODE4_Msk; // PA4
+	GPIOA->MODER |= GPIO_MODER_MODE1_Msk; // PA1 -> A1
+    GPIOA->MODER |= GPIO_MODER_MODE4_Msk; // PA4 -> A2
 
 	/** ADC config **/
 	// enable clock access to ADC1
